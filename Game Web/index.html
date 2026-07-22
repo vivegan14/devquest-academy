@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-site-verification" content="BNfHgUZcWxtrcdrUBp7x-VDWqJW3lshfr8KAh0z2PWs" />
+    <meta name="description" content="DevQuest Academy: 1000-Level Interactive Programming Mastery Suite.">
+    <title>DevQuest Academy: Dynamic Problem Engine v10.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" data-name="vs/editor/node_modules/monaco-editor/min/vs/editor/editor.main.css">
+    <style>
+        html, body { min-height: 100vh; margin: 0; padding: 0; background: #080811; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; opacity: 0.15; pointer-events: none; }
+        .glass-panel { background: rgba(18, 18, 30, 0.88); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
+        .glow-cyan { box-shadow: 0 0 25px rgba(34, 211, 238, 0.2); }
+        .glow-amber { box-shadow: 0 0 25px rgba(245, 158, 11, 0.3); }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); border-color: rgba(56, 189, 248, 0.5); box-shadow: 0 12px 28px rgba(56, 189, 248, 0.15); }
+        .grid-cell { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; border-radius: 6px; transition: all 0.3s ease-in-out; }
+        
+        @keyframes laser-scan { 0% { top: 0%; } 100% { top: 100%; } }
+        .laser-line { position: absolute; width: 100%; height: 2px; background: rgba(34, 211, 238, 0.8); box-shadow: 0 0 8px #22d3ee; animation: laser-scan 2s linear infinite alternate; }
+        @keyframes pulse-wave { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
+        .pulse-ring { position: absolute; border: 2px solid #a855f7; border-radius: 50%; animation: pulse-wave 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite; }
+        @keyframes float-gear { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .spin-gear { animation: float-gear 8s linear infinite; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    </style>
+</head>
+<body class="relative min-h-screen flex flex-col items-center justify-between p-4 md:p-8">
+
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="relative z-10 w-full max-w-md glass-panel rounded-2xl p-8 glow-cyan my-auto">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-extrabold tracking-wider text-cyan-400 font-mono">DEVQUEST_//CORE</h1>
+            <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest font-mono">1000-Level Adaptive Problem Suite</p>
+        </div>
+        <div class="space-y-4 font-mono">
+            <div>
+                <label class="text-xs text-cyan-400 font-bold block mb-1">USER ID</label>
+                <input type="text" id="username-input" placeholder="Enter codename..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-4 py-2.5 outline-none focus:border-cyan-400 text-sm">
+            </div>
+            <div>
+                <label class="text-xs text-cyan-400 font-bold block mb-1">SECURITY TOKEN</label>
+                <input type="password" id="password-input" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-4 py-2.5 outline-none focus:border-cyan-400 text-sm">
+            </div>
+
+            <!-- AVATAR SELECTION GRID -->
+            <div>
+                <label class="text-xs text-cyan-400 font-bold block mb-2">SELECT OPERATOR AVATAR</label>
+                <div class="grid grid-cols-5 gap-2" id="avatar-selector">
+                    <button type="button" onclick="selectAvatar('🤖')" class="avatar-option text-2xl p-2 rounded-lg bg-cyan-950 border border-cyan-400 hover:bg-cyan-900 transition">🤖</button>
+                    <button type="button" onclick="selectAvatar('🥷')" class="avatar-option text-2xl p-2 rounded-lg bg-slate-900 border border-slate-700 hover:bg-cyan-900 transition">🥷</button>
+                    <button type="button" onclick="selectAvatar('🧙‍♂️')" class="avatar-option text-2xl p-2 rounded-lg bg-slate-900 border border-slate-700 hover:bg-cyan-900 transition">🧙‍♂️</button>
+                    <button type="button" onclick="selectAvatar('👩‍💻')" class="avatar-option text-2xl p-2 rounded-lg bg-slate-900 border border-slate-700 hover:bg-cyan-900 transition">👩‍💻</button>
+                    <button type="button" onclick="selectAvatar('👾')" class="avatar-option text-2xl p-2 rounded-lg bg-slate-900 border border-slate-700 hover:bg-cyan-900 transition">👾</button>
+                </div>
+            </div>
+
+            <div id="auth-msg" class="text-xs text-rose-400 text-center min-h-[16px]"></div>
+            <button onclick="handleAuth()" class="w-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold py-3 rounded-lg transition text-xs tracking-wider uppercase font-mono">Access Academy Hub</button>
+        </div>
+    </div>
+
+    <!-- MAIN PLATFORM -->
+    <div id="main-platform" class="relative z-10 w-full max-w-7xl hidden flex-col">
+        <!-- Top Nav -->
+        <header class="flex flex-wrap justify-between items-center w-full mb-6 glass-panel rounded-xl p-4 gap-4">
+            <div class="flex items-center gap-4">
+                <button id="back-hub-btn" onclick="showHub()" class="hidden bg-slate-800 hover:bg-slate-700 text-cyan-400 font-mono text-xs font-bold px-3 py-2 rounded-lg border border-slate-700">← HUB MENU</button>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-wider text-cyan-400 font-mono">DEVQUEST_//ACADEMY</h1>
+                    <p class="text-xs text-gray-400 font-mono" id="current-location">HUB DASHBOARD</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <span id="rank-badge" class="text-xs font-mono font-bold text-amber-400 border border-amber-400/40 px-3 py-1.5 rounded-lg bg-amber-950/20">BEGINNER</span>
+                <span id="level-display" class="text-xs font-mono font-bold text-cyan-400 border border-cyan-400/30 px-3 py-1.5 rounded-lg bg-cyan-950/20">LVL: 1 / 1000</span>
+                <span id="user-display" class="text-xs font-mono text-cyan-300 border border-slate-700 px-3 py-1.5 rounded-lg bg-slate-900"></span>
+                <select id="lang-select" onchange="changeLanguage()" class="bg-slate-900 border border-slate-700 text-cyan-400 px-3 py-1.5 rounded-lg font-mono text-xs outline-none cursor-pointer">
+                    <option value="python">Python 3</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="c">C Language</option>
+                    <option value="cpp">C++</option>
+                </select>
+                <div class="bg-yellow-400/10 border border-yellow-400/40 text-yellow-400 px-3 py-1.5 rounded-lg font-bold text-xs font-mono">🪙 <span id="coin-count">0</span> CR</div>
+                <button onclick="logout()" class="bg-rose-600/20 border border-rose-500 hover:bg-rose-600 text-rose-300 hover:text-white font-mono text-xs font-bold px-3 py-2 rounded-lg transition">LOGOUT</button>
+            </div>
+        </header>
+
+        <!-- GAME HUB / SELECTOR -->
+        <div id="hub-view" class="w-full space-y-6">
+            <div class="text-center max-w-2xl mx-auto my-4">
+                <h2 class="text-3xl font-extrabold text-white font-mono tracking-tight">1000-LEVEL ADVANCEMENT TIER</h2>
+                <p class="text-sm text-gray-400 mt-1">Every level presents a brand-new programming task or bug type. No pre-filled solutions!</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Game 1 -->
+                <div onclick="launchGame(1)" class="glass-panel p-6 rounded-2xl card-hover cursor-pointer border border-cyan-500/40 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-3xl">🚀</span>
+                            <span class="text-[10px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-500/40 px-2 py-1 rounded">GRID TRAVERSAL</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white font-mono mb-2">1. Horizon Matrix Grid</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed mb-4">Navigate complex grid obstacles and dynamic coordinates using clean navigation logic.</p>
+                    </div>
+                    <div class="text-xs text-cyan-400 font-mono font-bold">ENTER MODULE →</div>
+                </div>
+
+                <!-- Game 2 -->
+                <div onclick="launchGame(2)" class="glass-panel p-6 rounded-2xl card-hover cursor-pointer border border-purple-500/20 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-3xl">📡</span>
+                            <span class="text-[10px] font-mono font-bold bg-purple-950 text-purple-400 border border-purple-500/40 px-2 py-1 rounded">LOOPS & ITERATION</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white font-mono mb-2">2. Signal Tower Dispatch</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed mb-4">Solve unique loop patterns: range loops, countdowns, filters, and mathematical accumulations.</p>
+                    </div>
+                    <div class="text-xs text-purple-400 font-mono font-bold">ENTER MODULE →</div>
+                </div>
+
+                <!-- Game 3 -->
+                <div onclick="launchGame(3)" class="glass-panel p-6 rounded-2xl card-hover cursor-pointer border border-amber-500/20 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-3xl">⚡</span>
+                            <span class="text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-500/40 px-2 py-1 rounded">BOOLEAN LOGIC</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white font-mono mb-2">3. Quantum Gate Router</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed mb-4">Evaluate multi-variable boolean conditions, range checks, and branch logic statements.</p>
+                    </div>
+                    <div class="text-xs text-amber-400 font-mono font-bold">ENTER MODULE →</div>
+                </div>
+
+                <!-- Game 4 -->
+                <div onclick="launchGame(4)" class="glass-panel p-6 rounded-2xl card-hover cursor-pointer border border-green-500/20 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-3xl">👾</span>
+                            <span class="text-[10px] font-mono font-bold bg-green-950 text-green-400 border border-green-500/40 px-2 py-1 rounded">DEBUGGING</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white font-mono mb-2">4. Syntax Firewall Defense</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed mb-4">Find and repair dynamic syntax errors: missing symbols, scope errors, quotes, and typos.</p>
+                    </div>
+                    <div class="text-xs text-green-400 font-mono font-bold">ENTER MODULE →</div>
+                </div>
+
+                <!-- Game 5 -->
+                <div onclick="launchGame(5)" class="glass-panel p-6 rounded-2xl card-hover cursor-pointer border border-rose-500/20 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-3xl">🔐</span>
+                            <span class="text-[10px] font-mono font-bold bg-rose-950 text-rose-400 border border-rose-500/40 px-2 py-1 rounded">FUNCTIONS</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white font-mono mb-2">5. Cryptographic Key Forge</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed mb-4">Construct custom functions that compute arithmetic, string manipulation, or array operations.</p>
+                    </div>
+                    <div class="text-xs text-rose-400 font-mono font-bold">ENTER MODULE →</div>
+                </div>
+
+                <!-- Game 6 -->
+                <div onclick="launchGame(6)" class="glass-panel p-6 rounded-2xl card-hover cursor-pointer border border-sky-500/20 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-3xl">🧠</span>
+                            <span class="text-[10px] font-mono font-bold bg-sky-950 text-sky-400 border border-sky-500/40 px-2 py-1 rounded">MEMORY & POINTERS</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white font-mono mb-2">6. Memory Leak Purge</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed mb-4">Deallocate memory structures, clear references, and safely manage pointer scopes.</p>
+                    </div>
+                    <div class="text-xs text-sky-400 font-mono font-bold">ENTER MODULE →</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WORKSPACE VIEW -->
+        <div id="workspace-view" class="hidden grid-cols-1 lg:grid-cols-12 gap-6 w-full items-start">
+            <!-- Left Directive Panel -->
+            <div class="lg:col-span-4 glass-panel rounded-xl p-5 max-h-[600px] overflow-y-auto">
+                <span class="text-xs text-cyan-400 font-mono font-bold uppercase tracking-widest block mb-1" id="game-badge">MODULE</span>
+                <h2 class="text-xl font-bold font-mono text-white mb-1" id="game-title">Game Title</h2>
+                <div id="test-indicator" class="hidden text-[11px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 p-2 rounded mb-3 animate-pulse">
+                    ⚠️ MILESTONE ASSESSMENT TEST LEVEL! Clear this test to advance rank.
+                </div>
+                <div id="game-description" class="text-sm text-gray-300 leading-relaxed space-y-3 font-sans"></div>
+            </div>
+
+            <!-- Center Visualizer Stage -->
+            <div class="lg:col-span-4 glass-panel rounded-xl p-5 flex flex-col items-center justify-between min-h-[420px] relative overflow-hidden">
+                <h3 class="text-xs font-mono font-bold text-gray-400 uppercase tracking-widest mb-2 z-10">Interactive Execution Monitor</h3>
+                <div id="visualizer-stage" class="w-full flex-1 flex flex-col items-center justify-center bg-slate-950 rounded-lg border border-slate-800 p-4 font-mono text-center relative overflow-hidden z-10">
+                    <!-- Dynamic Visualizer Content -->
+                </div>
+                <div id="game-status" class="mt-4 text-xs font-mono text-center min-h-[30px] px-2 text-cyan-400 z-10">STATUS: Waiting for code execution...</div>
+            </div>
+
+            <!-- Right IDE Workspace -->
+            <div class="lg:col-span-4 flex flex-col glass-panel rounded-xl p-5 glow-cyan">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-mono font-bold text-gray-400 uppercase tracking-widest">Programmable Terminal</span>
+                    <span class="text-[10px] font-mono text-cyan-400" id="current-lang-tag">Python 3</span>
+                </div>
+                <div id="monaco-container" class="w-full h-[320px] rounded-lg overflow-hidden border border-slate-800"></div>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="resetCurrentGame()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs font-bold py-3 px-4 rounded-lg transition">RESET</button>
+                    <button id="exec-btn" onclick="executeProgram()" class="flex-1 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-mono text-xs font-bold py-3 px-4 rounded-lg transition shadow-lg shadow-cyan-400/20">RUN CODE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VICTORY MODAL -->
+    <div id="victory-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-8 rounded-2xl max-w-lg text-center space-y-4 glow-amber border border-amber-500/50">
+            <div class="text-5xl animate-bounce">🏆</div>
+            <h2 class="text-2xl font-extrabold text-amber-400 font-mono">1000-LEVEL MASTERY ACHIEVED!</h2>
+            <p class="text-xs text-gray-300 font-sans leading-relaxed">
+                Congratulations Agent! You have mastered every single unique programming challenge. You are an Academy Grandmaster Programmer!
+            </p>
+            <div class="text-xs font-mono bg-slate-900 border border-slate-800 p-3 rounded text-cyan-400">
+                CAREER SCORE: <span id="final-coins">0</span> CREDITS
+            </div>
+            <button onclick="restart1000Loop()" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-mono text-xs font-bold py-3 rounded-lg uppercase tracking-wider transition">RESTART CAREER (LEVEL 1)</button>
+        </div>
+    </div>
+
+    <script>var require = { paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' } };</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/editor/editor.main.nls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/editor/editor.main.js"></script>
+
+    <script>
+        let editor, currentUser = null, totalCoins = 0, currentLevel = 1, activeGameId = null;
+        let selectedAvatar = '🤖';
+        let playerPos = { x: 0, y: 0 };
+        let currentChallenge = {};
+
+        function selectAvatar(icon) {
+            selectedAvatar = icon;
+            document.querySelectorAll('.avatar-option').forEach(btn => {
+                btn.classList.remove('border-cyan-400', 'bg-cyan-950');
+                btn.classList.add('border-slate-700', 'bg-slate-900');
+                if (btn.innerText.includes(icon)) {
+                    btn.classList.remove('border-slate-700', 'bg-slate-900');
+                    btn.classList.add('border-cyan-400', 'bg-cyan-950');
+                }
+            });
+        }
+
+        function getTierInfo(lvl) {
+            if (lvl === 1000) return { rank: "GRANDMASTER TEST", test: true };
+            let hundredIndex = Math.floor((lvl - 1) / 100);
+            let isTest = (lvl % 100 === 0);
+
+            const tiers = [
+                "BEGINNER", "BEGINNER ADVANCED", "INTERMEDIATE", "INTERMEDIATE ADVANCED",
+                "PROFICIENT", "PROFICIENT ADVANCED", "EXPERT", "EXPERT ADVANCED",
+                "MASTER", "GRANDMASTER"
+            ];
+
+            let rankName = tiers[hundredIndex] || "GRANDMASTER";
+            if (isTest) rankName += " [TEST LEVEL]";
+            return { rank: rankName, test: isTest };
+        }
+
+        function updateTierUI() {
+            const tier = getTierInfo(currentLevel);
+            document.getElementById('rank-badge').innerText = tier.rank;
+            document.getElementById('level-display').innerText = `LVL: ${currentLevel} / 1000`;
+            
+            const testInd = document.getElementById('test-indicator');
+            if (tier.test) testInd.classList.remove('hidden');
+            else testInd.classList.add('hidden');
+        }
+
+        function handleAuth() {
+            const user = document.getElementById('username-input').value.trim();
+            const pass = document.getElementById('password-input').value.trim();
+            const msgEl = document.getElementById('auth-msg');
+
+            if(!user || !pass) { msgEl.innerText = "ERROR: Input access details."; return; }
+            let systemProfiles = JSON.parse(localStorage.getItem('devquest_v10_profiles') || '{}');
+
+            if(systemProfiles[user]) {
+                if(systemProfiles[user].password !== pass) { msgEl.innerText = "ACCESS DENIED: Invalid Security Token."; return; }
+                totalCoins = systemProfiles[user].coins || 0;
+                currentLevel = systemProfiles[user].level || 1;
+                selectedAvatar = systemProfiles[user].avatar || '🤖';
+            } else {
+                totalCoins = 0;
+                currentLevel = 1;
+                systemProfiles[user] = { password: pass, coins: 0, level: 1, avatar: selectedAvatar };
+                localStorage.setItem('devquest_v10_profiles', JSON.stringify(systemProfiles));
+            }
+
+            currentUser = user;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-platform').style.display = 'flex';
+            document.getElementById('user-display').innerText = `${selectedAvatar} ${user.toUpperCase()}`;
+            document.getElementById('coin-count').innerText = totalCoins;
+
+            updateTierUI();
+            initMonacoEditor();
+            initBackgroundAnimation();
+        }
+
+        function saveProgress() {
+            if(!currentUser) return;
+            let systemProfiles = JSON.parse(localStorage.getItem('devquest_v10_profiles') || '{}');
+            if(systemProfiles[currentUser]) {
+                systemProfiles[currentUser].coins = totalCoins;
+                systemProfiles[currentUser].level = currentLevel;
+                systemProfiles[currentUser].avatar = selectedAvatar;
+                localStorage.setItem('devquest_v10_profiles', JSON.stringify(systemProfiles));
+            }
+        }
+
+        function logout() { saveProgress(); location.reload(); }
+
+        function initMonacoEditor() {
+            if (editor) return;
+            editor = monaco.editor.create(document.getElementById('monaco-container'), {
+                value: "# Write your solution here...\n",
+                language: 'python', theme: 'vs-dark', automaticLayout: true, fontSize: 13, fontFamily: 'Courier New', minimap: { enabled: false }
+            });
+        }
+
+        function changeLanguage() {
+            const selectedLang = document.getElementById('lang-select').value;
+            let monacoLang = (selectedLang === 'c' || selectedLang === 'cpp') ? 'cpp' : selectedLang;
+            monaco.editor.setModelLanguage(editor.getModel(), monacoLang);
+            document.getElementById('current-lang-tag').innerText = selectedLang.toUpperCase();
+            if(activeGameId) launchGame(activeGameId);
+        }
+
+        function showHub() {
+            activeGameId = null;
+            document.getElementById('hub-view').classList.remove('hidden');
+            document.getElementById('workspace-view').classList.add('hidden');
+            document.getElementById('workspace-view').classList.remove('grid');
+            document.getElementById('back-hub-btn').classList.add('hidden');
+            document.getElementById('current-location').innerText = "HUB DASHBOARD";
+            updateTierUI();
+        }
+
+        function launchGame(gameId) {
+            activeGameId = gameId;
+            document.getElementById('hub-view').classList.add('hidden');
+            document.getElementById('workspace-view').classList.remove('hidden');
+            document.getElementById('workspace-view').classList.add('grid');
+            document.getElementById('back-hub-btn').classList.remove('hidden');
+            
+            updateTierUI();
+            const lang = document.getElementById('lang-select').value;
+            setupGameModule(gameId, lang);
+        }
+
+        // DYNAMIC PROBLEM GENERATION ENGINE
+        function generateChallengeParameters(gameId, lvl) {
+            const isTest = (lvl % 100 === 0);
+            
+            if (gameId === 1) { // Matrix Grid with Dynamic Obstacles
+                let targetX = ((lvl * 3) % 4) + 1;
+                let targetY = ((lvl * 2) % 4) + 1;
+                let obstacleX = (targetX > 1) ? targetX - 1 : 2;
+                let obstacleY = (targetY > 1) ? targetY - 1 : 0;
+                if (obstacleX === targetX && obstacleY === targetY) obstacleX = 0;
+                return { targetX, targetY, obstacleX, obstacleY, isTest };
+
+            } else if (gameId === 2) { // Loop Variants
+                const loopTypes = ['COUNT_UP', 'SUM_SERIES', 'COUNT_DOWN', 'EVEN_NUMBERS', 'MULTIPLY_SERIES'];
+                let type = loopTypes[(lvl - 1) % loopTypes.length];
+                let count = ((lvl * 5) % 8) + 3;
+                return { type, count, isTest };
+
+            } else if (gameId === 3) { // Logic Variants
+                const logicTypes = ['THRESHOLD', 'RANGE_CHECK', 'MULTI_VAR_AND', 'MULTI_VAR_OR', 'EQUALITY_CHECK'];
+                let type = logicTypes[(lvl - 1) % logicTypes.length];
+                let valA = ((lvl * 13) % 100) + 10;
+                let valB = ((lvl * 7) % 50) + 5;
+                return { type, valA, valB, isTest };
+
+            } else if (gameId === 4) { // Syntax Defense (DIFFERENT BUG TYPE EVERY LEVEL)
+                const bugTypes = [
+                    'MISSING_COLON', 
+                    'ASSIGNMENT_IN_IF', 
+                    'UNMATCHED_PAREN', 
+                    'VARIABLE_TYPO', 
+                    'MISSING_QUOTES', 
+                    'WRONG_LOGICAL_OP',
+                    'INDENTATION_FAULT'
+                ];
+                let bugType = bugTypes[(lvl - 1) % bugTypes.length];
+                let val = 100 + ((lvl * 9) % 300);
+                return { bugType, val, isTest };
+
+            } else if (gameId === 5) { // Cryptographic Forge
+                const taskTypes = ['MULTIPLY', 'SQUARE_SUM', 'MAX_VAL', 'SUM_ARRAY'];
+                let task = taskTypes[(lvl - 1) % taskTypes.length];
+                let numA = ((lvl * 3) % 9) + 2;
+                let numB = ((lvl * 5) % 9) + 2;
+                let numC = ((lvl * 7) % 9) + 2;
+                return { task, numA, numB, numC, isTest };
+
+            } else if (gameId === 6) { // Memory Management
+                const memTypes = ['NULLIFY_POINTER', 'DEALLOCATE_ARRAY', 'CLOSE_HANDLE', 'PURGE_BUFFER'];
+                let type = memTypes[(lvl - 1) % memTypes.length];
+                let size = 128 * (((lvl * 3) % 8) + 1);
+                return { type, size, isTest };
+            }
+        }
+
+        // SETUP GAME MODULE (NO SOLVED CODE PROVIDED)
+        function setupGameModule(gameId, lang) {
+            const badge = document.getElementById('game-badge');
+            const title = document.getElementById('game-title');
+            const desc = document.getElementById('game-description');
+            const stage = document.getElementById('visualizer-stage');
+            
+            document.getElementById('game-status').innerText = "STATUS: Standby for execution";
+            currentChallenge = generateChallengeParameters(gameId, currentLevel);
+
+            if (gameId === 1) {
+                badge.innerText = `GAME 01 // GRID (LEVEL ${currentLevel})`;
+                title.innerText = "Horizon Matrix Grid";
+                document.getElementById('current-location').innerText = `MODULE: GRID (LVL ${currentLevel})`;
+                desc.innerHTML = `
+                    <p>Navigate your operator avatar ${selectedAvatar} to reach the portal 🌀 at <strong>(${currentChallenge.targetX}, ${currentChallenge.targetY})</strong>.</p>
+                    <p class="text-xs text-rose-400 font-mono font-bold">⚠️ OBSTACLE WALL at (${currentChallenge.obstacleX}, ${currentChallenge.obstacleY})!</p>
+                    <p class="text-xs text-cyan-400 font-mono font-bold uppercase">// Directive</p>
+                    <p>Write commands using <code>move_right()</code>, <code>move_down()</code>, <code>move_left()</code>, or <code>move_up()</code> (or JavaScript camelCase equivalents) to reach target without hitting the obstacle.</p>
+                `;
+                playerPos = { x: 0, y: 0 };
+                renderMatrixGrid();
+
+                let starter = `# Level ${currentLevel} Grid Task\n# Goal: (${currentChallenge.targetX}, ${currentChallenge.targetY}) | Avoid Wall: (${currentChallenge.obstacleX}, ${currentChallenge.obstacleY})\n\n`;
+                if(lang==='javascript' || lang==='c' || lang==='cpp') starter = `// Level ${currentLevel} Grid Task\n// Goal: (${currentChallenge.targetX}, ${currentChallenge.targetY}) | Avoid Wall: (${currentChallenge.obstacleX}, ${currentChallenge.obstacleY})\n\n`;
+                editor.setValue(starter);
+
+            } else if (gameId === 2) {
+                badge.innerText = `GAME 02 // LOOPS (LEVEL ${currentLevel})`;
+                title.innerText = "Signal Tower Dispatch";
+                document.getElementById('current-location').innerText = `MODULE: TOWER (LVL ${currentLevel})`;
+
+                let taskDesc = "";
+                let codeStarter = "";
+
+                if (currentChallenge.type === 'COUNT_UP') {
+                    taskDesc = `Transmit exactly <strong>${currentChallenge.count} pulses</strong> using a standard loop calling <code>send_pulse()</code>.`;
+                } else if (currentChallenge.type === 'SUM_SERIES') {
+                    taskDesc = `Write a loop that calculates the sum of numbers from <code>1</code> to <code>${currentChallenge.count}</code> and transmits the total via <code>send_total(sum)</code>.`;
+                } else if (currentChallenge.type === 'COUNT_DOWN') {
+                    taskDesc = `Write a loop that counts down from <code>${currentChallenge.count}</code> to <code>1</code> calling <code>count_down(i)</code>.`;
+                } else if (currentChallenge.type === 'EVEN_NUMBERS') {
+                    taskDesc = `Write a loop that emits <code>send_even(i)</code> for all even numbers up to <code>${currentChallenge.count * 2}</code>.`;
+                } else {
+                    taskDesc = `Write a loop that multiplies <code>total = total * 2</code> for <strong>${currentChallenge.count} iterations</strong> starting at 1, then transmits <code>send_result(total)</code>.`;
+                }
+
+                desc.innerHTML = `
+                    <p><strong>TASK:</strong> ${taskDesc}</p>
+                    <p class="text-xs text-purple-400 font-mono font-bold uppercase">// Directive</p>
+                    <p>Write your own loop logic in ${lang.toUpperCase()}. No template code provided!</p>
+                `;
+
+                stage.innerHTML = `
+                    <div class="relative flex items-center justify-center my-4">
+                        <div class="pulse-ring w-16 h-16"></div>
+                        <div class="text-5xl z-10">📡</div>
+                    </div>
+                    <div class="text-xs text-gray-400 font-mono">TASK TYPE: <span class="text-purple-400 font-bold">${currentChallenge.type}</span></div>
+                `;
+
+                codeStarter = `# Level ${currentLevel} - ${currentChallenge.type}\n# Write code below:\n\n`;
+                if(lang==='javascript' || lang==='c' || lang==='cpp') codeStarter = `// Level ${currentLevel} - ${currentChallenge.type}\n// Write code below:\n\n`;
+                editor.setValue(codeStarter);
+
+            } else if (gameId === 3) {
+                badge.innerText = `GAME 03 // LOGIC (LEVEL ${currentLevel})`;
+                title.innerText = "Quantum Gate Router";
+                document.getElementById('current-location').innerText = `MODULE: ROUTER (LVL ${currentLevel})`;
+
+                let logicTask = "";
+                if (currentChallenge.type === 'THRESHOLD') {
+                    logicTask = `Given <code>energy = ${currentChallenge.valA}</code> and <code>limit = ${currentChallenge.valB}</code>, write an <code>if/else</code> block: if <code>energy > limit</code> call <code>route_auxiliary()</code>, else <code>route_main()</code>.`;
+                } else if (currentChallenge.type === 'RANGE_CHECK') {
+                    logicTask = `Given <code>temp = ${currentChallenge.valA}</code>, write code that checks if <code>temp</code> is between <code>20</code> and <code>80</code> inclusive. If so, call <code>system_stable()</code>, else <code>system_critical()</code>.`;
+                } else if (currentChallenge.type === 'MULTI_VAR_AND') {
+                    logicTask = `Given <code>power = ${currentChallenge.valA}</code> and <code>shield = ${currentChallenge.valB}</code>, check if BOTH <code>power > 20</code> AND <code>shield > 10</code> using the <code>and</code> (or <code>&&</code>) operator to call <code>engage_warp()</code>.`;
+                } else if (currentChallenge.type === 'MULTI_VAR_OR') {
+                    logicTask = `Check if EITHER <code>override = True</code> OR <code>key = ${currentChallenge.valA}</code> is satisfied using <code>or</code> (or <code>||</code>) operator to trigger <code>unlock_gate()</code>.`;
+                } else {
+                    logicTask = `Given <code>code = ${currentChallenge.valA}</code> and <code>master = ${currentChallenge.valB}</code>, check if <code>code == master</code> to run <code>grant_access()</code>, else <code>deny_access()</code>.`;
+                }
+
+                desc.innerHTML = `
+                    <p><strong>TASK:</strong> ${logicTask}</p>
+                    <p class="text-xs text-amber-400 font-mono font-bold uppercase">// Directive</p>
+                    <p>Implement the correct conditional check from scratch.</p>
+                `;
+
+                stage.innerHTML = `
+                    <div class="laser-line"></div>
+                    <div class="text-2xl mb-2 text-amber-400 font-mono font-bold">⚡ ${currentChallenge.type}</div>
+                    <span class="text-xs text-gray-400">ROUTER GATE: <span id="gate-status" class="text-amber-400 font-bold">STANDBY</span></span>
+                `;
+
+                let codeStarter = `# Level ${currentLevel} Quantum Gate - ${currentChallenge.type}\n# Write conditional logic below:\n\n`;
+                if(lang==='javascript' || lang==='c' || lang==='cpp') codeStarter = `// Level ${currentLevel} Quantum Gate - ${currentChallenge.type}\n// Write conditional logic below:\n\n`;
+                editor.setValue(codeStarter);
+
+            } else if (gameId === 4) {
+                badge.innerText = `GAME 04 // DEBUGGING (LEVEL ${currentLevel})`;
+                title.innerText = "Syntax Firewall Defense";
+                document.getElementById('current-location').innerText = `MODULE: FIREWALL (LVL ${currentLevel})`;
+
+                let brokenCode = "";
+                let bugPrompt = "";
+
+                if (currentChallenge.bugType === 'MISSING_COLON') {
+                    bugPrompt = "Fix the missing colon in the conditional statement.";
+                    brokenCode = `# Level ${currentLevel} Firewall Bug Fix\npower = ${currentChallenge.val}\nif power > 50\n    activate_firewall()\n`;
+                    if(lang==='javascript' || lang==='c' || lang==='cpp') {
+                        bugPrompt = "Fix the missing parenthesis or bracket in the conditional block.";
+                        brokenCode = `// Level ${currentLevel} Firewall Bug Fix\nlet power = ${currentChallenge.val};\nif power > 50 {\n    activateFirewall();\n}\n`;
+                    }
+                } else if (currentChallenge.bugType === 'ASSIGNMENT_IN_IF') {
+                    bugPrompt = "Fix the assignment operator used inside the condition instead of comparison.";
+                    brokenCode = `# Level ${currentLevel} Firewall Bug Fix\ncode = ${currentChallenge.val}\nif code = ${currentChallenge.val}:\n    activate_firewall()\n`;
+                    if(lang==='javascript' || lang==='c' || lang==='cpp') {
+                        brokenCode = `// Level ${currentLevel} Firewall Bug Fix\nlet code = ${currentChallenge.val};\nif (code = ${currentChallenge.val}) {\n    activateFirewall();\n}\n`;
+                    }
+                } else if (currentChallenge.bugType === 'UNMATCHED_PAREN') {
+                    bugPrompt = "Fix the unmatched parenthesis in the function call.";
+                    brokenCode = `# Level ${currentLevel} Firewall Bug Fix\ndef shield_status(val:\n    return val * 2\n`;
+                    if(lang==='javascript' || lang==='c' || lang==='cpp') {
+                        brokenCode = `// Level ${currentLevel} Firewall Bug Fix\nfunction shieldStatus(val {\n    return val * 2;\n}\n`;
+                    }
+                } else if (currentChallenge.bugType === 'VARIABLE_TYPO') {
+                    bugPrompt = "Identify and fix the misspelled variable name.";
+                    brokenCode = `# Level ${currentLevel} Firewall Bug Fix\nfirewall_shield = ${currentChallenge.val}\nif firewal_shield == ${currentChallenge.val}:\n    activate_firewall()\n`;
+                    if(lang==='javascript' || lang==='c' || lang==='cpp') {
+                        brokenCode = `// Level ${currentLevel} Firewall Bug Fix\nlet firewallShield = ${currentChallenge.val};\nif (firewalShield === ${currentChallenge.val}) {\n    activateFirewall();\n}\n`;
+                    }
+                } else if (currentChallenge.bugType === 'MISSING_QUOTES') {
+                    bugPrompt = "Fix the missing quotation marks around string literals.";
+                    brokenCode = `# Level ${currentLevel} Firewall Bug Fix\nstatus = ONLINE\nif status == "ONLINE":\n    activate_firewall()\n`;
+                    if(lang==='javascript' || lang==='c' || lang==='cpp') {
+                        brokenCode = `// Level ${currentLevel} Firewall Bug Fix\nlet status = ONLINE;\nif (status === "ONLINE") {\n    activateFirewall();\n}\n`;
+                    }
+                } else if (currentChallenge.bugType === 'WRONG_LOGICAL_OP') {
+                    bugPrompt = "Replace the incorrect logical operator so both conditions must be true.";
+                    brokenCode = `# Level ${currentLevel} Firewall Bug Fix\nkey1 = True\nkey2 = True\nif key1 or key2 == False:\n    activate_firewall()\n`;
+                    if(lang==='javascript' || lang==='c' || lang==='cpp') {
+                        brokenCode = `// Level ${currentLevel} Firewall Bug Fix\nlet key1 = true;\nlet key2 = true;\nif (key1 || key2 === false) {\n    activateFirewall();\n}\n`;
+                    }
+                } else {
+                    bugPrompt = "Fix the indentation block fault.";
+                    brokenCode = `# Level ${currentLevel} Firewall Bug Fix\ndef run_defense():\nactivate_firewall()\n`;
+                    if(lang==='javascript' || lang==='c' || lang==='cpp') {
+                        brokenCode = `// Level ${currentLevel} Firewall Bug Fix\nfunction runDefense() \n    activateFirewall();\n}\n`;
+                    }
+                }
+
+                desc.innerHTML = `
+                    <p><strong>BUG TYPE:</strong> <span class="text-rose-400 font-bold">${currentChallenge.bugType}</span></p>
+                    <p>${bugPrompt}</p>
+                    <p class="text-xs text-green-400 font-mono font-bold uppercase">// Directive</p>
+                    <p>Find and fix the syntax bug in the editor panel.</p>
+                `;
+
+                stage.innerHTML = `
+                    <div class="text-5xl mb-3 animate-pulse">🛡️</div>
+                    <div class="text-xs font-mono text-rose-400 border border-rose-500/30 p-2 rounded bg-rose-950/20 my-2">ERROR: ${currentChallenge.bugType}</div>
+                    <span class="text-xs text-gray-400">SHIELD STATUS: <span id="shield-status" class="text-rose-500 font-bold">OFFLINE</span></span>
+                `;
+
+                editor.setValue(brokenCode);
+
+            } else if (gameId === 5) {
+                badge.innerText = `GAME 05 // FUNCTIONS (LEVEL ${currentLevel})`;
+                title.innerText = "Cryptographic Key Forge";
+                document.getElementById('current-location').innerText = `MODULE: FORGE (LVL ${currentLevel})`;
+
+                let funcTask = "";
+                if (currentChallenge.task === 'MULTIPLY') {
+                    funcTask = `Define a function <code>forge_key(a, b)</code> that returns <code>a * b</code>. Call it with inputs <code>(${currentChallenge.numA}, ${currentChallenge.numB})</code> and pass result to <code>unlock_vault(key)</code>.`;
+                } else if (currentChallenge.task === 'SQUARE_SUM') {
+                    funcTask = `Define a function <code>square_sum(a, b)</code> that returns <code>a^2 + b^2</code> (a*a + b*b). Call it with <code>(${currentChallenge.numA}, ${currentChallenge.numB})</code> and pass result to <code>unlock_vault(key)</code>.`;
+                } else if (currentChallenge.task === 'MAX_VAL') {
+                    funcTask = `Define a function <code>find_max(a, b, c)</code> that returns the highest value among three numbers. Test with <code>(${currentChallenge.numA}, ${currentChallenge.numB}, ${currentChallenge.numC})</code> and send result to <code>unlock_vault(key)</code>.`;
+                } else {
+                    funcTask = `Define a function <code>sum_list(arr)</code> that sums numbers in an array. Pass array <code>[${currentChallenge.numA}, ${currentChallenge.numB}, ${currentChallenge.numC}]</code> and pass sum to <code>unlock_vault(key)</code>.`;
+                }
+
+                desc.innerHTML = `
+                    <p><strong>TASK:</strong> ${funcTask}</p>
+                    <p class="text-xs text-rose-400 font-mono font-bold uppercase">// Directive</p>
+                    <p>Write the requested function implementation completely from scratch.</p>
+                `;
+
+                stage.innerHTML = `
+                    <div class="text-5xl mb-2 spin-gear">⚙️</div>
+                    <div class="text-xs font-mono text-gray-300 my-2">TASK MODE: <span class="text-rose-400 font-bold">${currentChallenge.task}</span></div>
+                    <span class="text-xs text-gray-400">VAULT LOCK: <span id="vault-status" class="text-rose-500 font-bold">LOCKED</span></span>
+                `;
+
+                let codeStarter = `# Level ${currentLevel} Forge Task: ${currentChallenge.task}\n# Define your function below:\n\n`;
+                if(lang==='javascript' || lang==='c' || lang==='cpp') codeStarter = `// Level ${currentLevel} Forge Task: ${currentChallenge.task}\n// Define your function below:\n\n`;
+                editor.setValue(codeStarter);
+
+            } else if (gameId === 6) {
+                badge.innerText = `GAME 06 // MEMORY (LEVEL ${currentLevel})`;
+                title.innerText = "Memory Leak Purge";
+                document.getElementById('current-location').innerText = `MODULE: MEMORY (LVL ${currentLevel})`;
+
+                let memTask = "";
+                if (currentChallenge.type === 'NULLIFY_POINTER') {
+                    memTask = `Given pointer <code>ptr</code>, set <code>ptr = None</code> (or <code>null</code>/<code>NULL</code>) and call <code>purge_memory()</code>.`;
+                } else if (currentChallenge.type === 'DEALLOCATE_ARRAY') {
+                    memTask = `Given array <code>buffer = [1, 2, 3, 4]</code>, clear or reassign it to empty <code>[]</code> or <code>None</code> and execute <code>collect_garbage()</code>.`;
+                } else if (currentChallenge.type === 'CLOSE_HANDLE') {
+                    memTask = `Given active stream handle <code>stream</code>, call <code>stream.close()</code> and trigger <code>purge_memory()</code>.`;
+                } else {
+                    memTask = `Given buffer size <code>${currentChallenge.size}</code> KB, write a loop deallocating chunks calling <code>free_chunk()</code> 4 times.`;
+                }
+
+                desc.innerHTML = `
+                    <p><strong>TASK:</strong> ${memTask}</p>
+                    <p class="text-xs text-sky-400 font-mono font-bold uppercase">// Directive</p>
+                    <p>Write memory cleanup commands in ${lang.toUpperCase()}.</p>
+                `;
+
+                stage.innerHTML = `
+                    <div class="text-4xl mb-2 animate-bounce">🧠</div>
+                    <div id="heap-box" class="text-xs font-mono border border-rose-500/50 p-3 rounded bg-rose-950/20 text-rose-300 my-2 animate-pulse">
+                        LEAK TYPE: ${currentChallenge.type} (${currentChallenge.size} KB)
+                    </div>
+                    <span class="text-xs text-gray-400">HEAP STATE: <span id="heap-status" class="text-rose-500 font-bold">CRITICAL</span></span>
+                `;
+
+                let codeStarter = `# Level ${currentLevel} Memory Task: ${currentChallenge.type}\n# Write memory purge commands:\n\n`;
+                if(lang==='javascript' || lang==='c' || lang==='cpp') codeStarter = `// Level ${currentLevel} Memory Task: ${currentChallenge.type}\n// Write memory purge commands:\n\n`;
+                editor.setValue(codeStarter);
+            }
+        }
+
+        function renderMatrixGrid() {
+            const stage = document.getElementById('visualizer-stage');
+            let gridHTML = `<div class="grid grid-cols-5 gap-1.5 p-2 bg-slate-900 border border-slate-800 rounded-lg relative overflow-hidden">`;
+            gridHTML += `<div class="laser-line"></div>`;
+            
+            for (let y = 0; y < 5; y++) {
+                for (let x = 0; x < 5; x++) {
+                    const isPlayer = playerPos.x === x && playerPos.y === y;
+                    const isGoal = currentChallenge.targetX === x && currentChallenge.targetY === y;
+                    const isObstacle = currentChallenge.obstacleX === x && currentChallenge.obstacleY === y;
+                    
+                    let content = '';
+                    let bgClass = 'bg-slate-950/80 border border-slate-800/80';
+                    if (isPlayer) { content = selectedAvatar; bgClass = 'bg-cyan-950 border border-cyan-400 glow-cyan animate-pulse'; }
+                    else if (isGoal) { content = '🌀'; bgClass = 'bg-purple-950 border border-purple-500/50 animate-pulse'; }
+                    else if (isObstacle) { content = '🧱'; bgClass = 'bg-rose-950/60 border border-rose-700/60'; }
+                    
+                    gridHTML += `<div class="grid-cell ${bgClass}">${content}</div>`;
+                }
+            }
+            gridHTML += `</div>`;
+            stage.innerHTML = gridHTML;
+        }
+
+        // EVALUATE USER CODE
+        async function executeProgram() {
+            const code = editor.getValue().trim();
+            const statusEl = document.getElementById('game-status');
+            statusEl.innerText = "EXECUTING SCRIPT...";
+            statusEl.className = "mt-4 text-xs font-mono text-center min-h-[30px] font-bold text-yellow-400";
+
+            await new Promise(res => setTimeout(res, 500));
+
+            let success = false;
+            let feedback = "";
+
+            if (activeGameId === 1) { // Matrix Grid Traversal Logic
+                playerPos = { x: 0, y: 0 };
+                const rightMoves = (code.match(/move_right\(\)|moveRight\(\)/g) || []).length;
+                const downMoves = (code.match(/move_down\(\)|moveDown\(\)/g) || []).length;
+                const leftMoves = (code.match(/move_left\(\)|moveLeft\(\)/g) || []).length;
+                const upMoves = (code.match(/move_up\(\)|moveUp\(\)/g) || []).length;
+
+                playerPos.x = Math.max(0, Math.min(4, rightMoves - leftMoves));
+                playerPos.y = Math.max(0, Math.min(4, downMoves - upMoves));
+                renderMatrixGrid();
+
+                if (playerPos.x === currentChallenge.obstacleX && playerPos.y === currentChallenge.obstacleY) {
+                    feedback = `CRASH! Collided with obstacle at (${currentChallenge.obstacleX}, ${currentChallenge.obstacleY}).`;
+                } else if (playerPos.x === currentChallenge.targetX && playerPos.y === currentChallenge.targetY) {
+                    success = true;
+                    feedback = `PASSED: Navigated safely to exit portal (${currentChallenge.targetX}, ${currentChallenge.targetY})!`;
+                } else {
+                    feedback = `FAILED: Avatar ended at (${playerPos.x}, ${playerPos.y}). Target portal is at (${currentChallenge.targetX}, ${currentChallenge.targetY}).`;
+                }
+
+            } else if (activeGameId === 2) { // Loop Variants
+                const hasLoop = code.includes('for') || code.includes('while');
+                if (!hasLoop) {
+                    feedback = "FAILED: Your code must contain a 'for' or 'while' loop construct.";
+                } else {
+                    if (currentChallenge.type === 'COUNT_UP') {
+                        if (code.includes('send_pulse()') || code.includes('sendPulse()')) {
+                            success = true;
+                            feedback = `PASSED: Transmitted pulses via loop iteration!`;
+                        } else { feedback = "FAILED: Call send_pulse() inside your loop."; }
+                    } else if (currentChallenge.type === 'SUM_SERIES') {
+                        if (code.includes('send_total') || code.includes('sendTotal') || code.includes('+')) {
+                            success = true;
+                            feedback = `PASSED: Correctly calculated and sent loop series total!`;
+                        } else { feedback = "FAILED: Calculate sum and transmit with send_total(sum)."; }
+                    } else if (currentChallenge.type === 'COUNT_DOWN') {
+                        if (code.includes('count_down') || code.includes('countDown') || code.includes('-')) {
+                            success = true;
+                            feedback = `PASSED: Countdown loop executed successfully!`;
+                        } else { feedback = "FAILED: Call count_down(i) inside a decrementing loop."; }
+                    } else {
+                        success = true;
+                        feedback = `PASSED: Loop pattern executed correctly!`;
+                    }
+                }
+
+            } else if (activeGameId === 3) { // Logic Router
+                const hasIf = code.includes('if');
+                if (!hasIf) {
+                    feedback = "FAILED: Code must include an 'if' conditional statement.";
+                } else {
+                    if (currentChallenge.type === 'THRESHOLD' && (code.includes('>') || code.includes('<'))) {
+                        success = true;
+                        feedback = "PASSED: Threshold logic verified!";
+                    } else if (currentChallenge.type === 'RANGE_CHECK' && (code.includes('and') || code.includes('&&') || (code.includes('>=') && code.includes('<=')))) {
+                        success = true;
+                        feedback = "PASSED: Range boundary check passed!";
+                    } else if (currentChallenge.type === 'MULTI_VAR_AND' && (code.includes('and') || code.includes('&&'))) {
+                        success = true;
+                        feedback = "PASSED: Multi-variable AND condition passed!";
+                    } else if (currentChallenge.type === 'MULTI_VAR_OR' && (code.includes('or') || code.includes('||'))) {
+                        success = true;
+                        feedback = "PASSED: Multi-variable OR condition passed!";
+                    } else if (code.includes('==') || code.includes('===')) {
+                        success = true;
+                        feedback = "PASSED: Equality logic check passed!";
+                    } else {
+                        feedback = "FAILED: Ensure correct conditional operators are used.";
+                    }
+                }
+
+            } else if (activeGameId === 4) { // Debugging Syntax Defense
+                let hasFix = false;
+                if (currentChallenge.bugType === 'MISSING_COLON' && (code.includes(':') || code.includes('{'))) hasFix = true;
+                if (currentChallenge.bugType === 'ASSIGNMENT_IN_IF' && (code.includes('==') || code.includes('==='))) hasFix = true;
+                if (currentChallenge.bugType === 'UNMATCHED_PAREN' && code.includes('val)')) hasFix = true;
+                if (currentChallenge.bugType === 'VARIABLE_TYPO' && (code.includes('firewall_shield') || code.includes('firewallShield'))) hasFix = true;
+                if (currentChallenge.bugType === 'MISSING_QUOTES' && (code.includes('"ONLINE"') || code.includes("'ONLINE'"))) hasFix = true;
+                if (currentChallenge.bugType === 'WRONG_LOGICAL_OP' && (code.includes('and') || code.includes('&&'))) hasFix = true;
+                if (currentChallenge.bugType === 'INDENTATION_FAULT' && !code.includes('def run_defense():activate')) hasFix = true;
+
+                if (hasFix) {
+                    success = true;
+                    feedback = "PASSED: Syntax fault repaired! Firewall active.";
+                    document.getElementById('shield-status').innerText = "ONLINE (100%)";
+                    document.getElementById('shield-status').className = "text-green-400 font-bold";
+                } else {
+                    feedback = `FAILED: Bug is still present. Inspect code for ${currentChallenge.bugType}.`;
+                }
+
+            } else if (activeGameId === 5) { // Cryptographic Functions
+                const hasDef = code.includes('def ') || code.includes('function ') || code.includes('int ') || code.includes('=>');
+                const hasReturn = code.includes('return');
+
+                if (hasDef && hasReturn) {
+                    success = true;
+                    feedback = "PASSED: Function definition constructed and validated!";
+                    document.getElementById('vault-status').innerText = "UNLOCKED";
+                    document.getElementById('vault-status').className = "text-green-400 font-bold";
+                } else {
+                    feedback = "FAILED: Write a complete function containing a 'return' statement.";
+                }
+
+            } else if (activeGameId === 6) { // Memory Purge
+                const freed = code.includes('None') || code.includes('null') || code.includes('NULL') || code.includes('close()') || code.includes('free') || code.includes('[]');
+                if (freed) {
+                    success = true;
+                    feedback = "PASSED: Memory resource deallocated and purged!";
+                    document.getElementById('heap-status').innerText = "STABLE";
+                    document.getElementById('heap-status').className = "text-green-400 font-bold";
+                } else {
+                    feedback = "FAILED: Clear reference, set pointer to None/null, or close handle.";
+                }
+            }
+
+            if (success) {
+                totalCoins += currentChallenge.isTest ? 500 : 150;
+                
+                if (currentLevel >= 1000) {
+                    document.getElementById('final-coins').innerText = totalCoins;
+                    document.getElementById('victory-modal').classList.remove('hidden');
+                    saveProgress();
+                    return;
+                }
+
+                currentLevel++;
+                document.getElementById('coin-count').innerText = totalCoins;
+                statusEl.innerText = `${feedback} ADVANCING TO LEVEL ${currentLevel}!`;
+                statusEl.className = "mt-4 text-xs font-mono text-center min-h-[30px] font-bold text-green-400";
+                
+                saveProgress();
+                updateTierUI();
+
+                setTimeout(() => {
+                    setupGameModule(activeGameId, document.getElementById('lang-select').value);
+                }, 1600);
+
+            } else {
+                statusEl.innerText = feedback;
+                statusEl.className = "mt-4 text-xs font-mono text-center min-h-[30px] font-bold text-rose-400";
+            }
+        }
+
+        function resetCurrentGame() {
+            if(activeGameId) launchGame(activeGameId);
+        }
+
+        function restart1000Loop() {
+            currentLevel = 1;
+            document.getElementById('victory-modal').classList.add('hidden');
+            saveProgress();
+            showHub();
+        }
+
+        function initBackgroundAnimation() {
+            const c = document.getElementById('bg-canvas');
+            const ctx = c.getContext('2d');
+            
+            function resizeCanvas() {
+                c.width = window.innerWidth;
+                c.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            const alph = '01<>/{}[]+=*';
+            const fontSize = 14;
+            let columns = Math.floor(c.width / fontSize);
+            let drops = Array(columns).fill(1);
+
+            function draw() {
+                ctx.fillStyle = 'rgba(8, 8, 17, 0.08)';
+                ctx.fillRect(0, 0, c.width, c.height);
+                ctx.fillStyle = '#22d3ee';
+                ctx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = alph.charAt(Math.floor(Math.random() * alph.length));
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > c.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }
+            setInterval(draw, 33);
+        }
+    </script>
+</body>
+</html>
