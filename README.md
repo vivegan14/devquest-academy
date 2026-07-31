@@ -5,8 +5,7 @@ Welcome to **DevQuest Academy**, an interactive, 1000-level programming mastery 
 ## 🌐 Live Demo
 
 Play and practice directly in your browser:  
-👉 **[Launch DevQuest Academy](github.com/vivegan14/devquest-academy/)**
-(devquestacademy.netlify.app)**
+👉 👉 **[Launch DevQuest Academy](https://vivegan14.github.io/devquest-academy/)**
 
  ✨ Features
 
